@@ -9,6 +9,8 @@
 *.db
 *.app
 *.dmg
+*.pro.user
+*.pro.user.*
 build/moc/
 build/ui/
 build/obj/
