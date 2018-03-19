@@ -1001,16 +1001,7 @@ namespace Net
 
 		return (double)nAmount / (double)COIN;
 	}
-	
-	Value dumptrustkeys(const Array& params, bool fHelp)
-	{
-		if (fHelp)
-			throw runtime_error(
-				"dumptrustkeys\n"
-				"Outputs Nexus Trust Keys");
-				
-	}
-	
+
 	/** Dump the top balances of the Rich List to RPC console. **/
 	Value dumprichlist(const Array& params, bool fHelp)
 	{
