@@ -102,7 +102,7 @@ T* alignup(T* p)
 inline std::vector<unsigned char> parse_ip(std::string ip)
 {
 	std::vector<unsigned char> bytes(4, 0);
-	sscanf(ip.c_str(), "%hu.%hu.%hu.%hu", &bytes[0], &bytes[1], &bytes[2], &bytes[3]);
+    sscanf(ip.c_str(), "%hhu.%hhu.%hhu.%hhu", &bytes[0], &bytes[1], &bytes[2], &bytes[3]);
 	
 	return bytes;
 }

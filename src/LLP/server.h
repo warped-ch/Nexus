@@ -273,7 +273,7 @@ namespace LLP
 					
 					/** Initialize DDOS Protection for Incoming IP Address. **/
 					std::vector<unsigned char> vAddress(4, 0);
-					sscanf(SOCKET->remote_endpoint().address().to_string().c_str(), "%u.%u.%u.%u", &vAddress[0], &vAddress[1], &vAddress[2], &vAddress[3]);
+                    sscanf(SOCKET->remote_endpoint().address().to_string().c_str(), "%hhu.%hhu.%hhu.%hhu", &vAddress[0], &vAddress[1], &vAddress[2], &vAddress[3]);
 					unsigned int ADDRESS = (vAddress[0] << 24) + (vAddress[1] << 16) + (vAddress[2] << 8) + vAddress[3];
 					
 					{ //LOCK(DDOS_MUTEX);
@@ -281,12 +281,12 @@ namespace LLP
 							DDOS_MAP[ADDRESS] = new DDOS_Filter(30);
 							
 						/** DDOS Operations: Only executed when DDOS is enabled. **/
-						if((fDDOS && DDOS_MAP[ADDRESS]->Banned()) || !CheckPermissions(strprintf("%u.%u.%u.%u:%u",vAddress[0], vAddress[1], vAddress[2],vAddress[3]), PORT))
+                        if((fDDOS && DDOS_MAP[ADDRESS]->Banned()) || !CheckPermissions(strprintf("%hhu.%hhu.%hhu.%hhu:%u",vAddress[0], vAddress[1], vAddress[2],vAddress[3]), PORT))
 						{
 							SOCKET -> shutdown(boost::asio::ip::tcp::socket::shutdown_both, ERROR_HANDLE);
 							SOCKET -> close();
 							
-							printf("##### BLOCKED: LLP Connection Request from %u.%u.%u.%u to Port %u\n", vAddress[0], vAddress[1], vAddress[2], vAddress[3], PORT);
+                            printf("##### BLOCKED: LLP Connection Request from %hhu.%hhu.%hhu.%hhu to Port %u\n", vAddress[0], vAddress[1], vAddress[2], vAddress[3], PORT);
 								
 							continue;
 						}
