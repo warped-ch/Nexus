@@ -18,6 +18,7 @@
 #else
 typedef int pid_t; /* define for windows compatiblity */
 #endif
+#include <cstddef>
 #include <map>
 #include <vector>
 #include <string>
@@ -62,7 +63,6 @@ static const int64 CENT = 10000;
 #define UEND(a)             ((unsigned char*)&((&(a))[1]))
 #define ARRAYLEN(array)     (sizeof(array)/sizeof((array)[0]))
 #define printf              OutputDebugStringF
-#define NULL                0
 
 #ifdef snprintf
 #undef snprintf
