@@ -119,16 +119,16 @@ private:
     // (transaction fee, for example)
     OptionsModel *optionsModel;
 
-    AddressTableModel *addressTableModel;
-    TransactionTableModel *transactionTableModel;
+    AddressTableModel *addressTableModel = nullptr;
+    TransactionTableModel *transactionTableModel = nullptr;
 
     // Cache some values to be able to detect changes
-    qint64 cachedBalance;
-	qint64 cachedStake;
-	qint64 cachedImmatureBalance;
-    qint64 cachedUnconfirmedBalance;
-    qint64 cachedNumTransactions;
-    EncryptionStatus cachedEncryptionStatus;
+    qint64 cachedBalance = 0;
+    qint64 cachedStake = 0;
+    qint64 cachedImmatureBalance = 0;
+    qint64 cachedUnconfirmedBalance = 0;
+    qint64 cachedNumTransactions = 0;
+    EncryptionStatus cachedEncryptionStatus = Unencrypted;
 
 signals:
     // Signal that balance in wallet changed

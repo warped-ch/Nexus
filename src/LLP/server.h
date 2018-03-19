@@ -12,20 +12,23 @@ namespace LLP
 	/** Base Template Thread Class for Server base. Used for Core LLP Packet Functionality. 
 		Not to be inherited, only for use by the LLP Server Base Class. **/
 	template <class ProtocolType> class DataThread
-	{
-		/** Data Thread. **/
-		Thread_t DATA_THREAD;
-		
+	{	
 	public:
 	
 		/** Service that is used to handle Connections on this Thread. **/
 		Service_t IO_SERVICE;
 		
 		/** Variables to track Connection / Request Count. **/
-		bool fDDOS; unsigned int nConnections, ID, REQUESTS, TIMEOUT, DDOS_rSCORE, DDOS_cSCORE;
+        bool fDDOS;
+        unsigned int ID, DDOS_rSCORE, DDOS_cSCORE, TIMEOUT;
+        unsigned int nConnections = 0;
+        unsigned int REQUESTS = 0;
 		
 		/** Vector to store Connections. **/
 		std::vector< ProtocolType* > CONNECTIONS;
+
+        /** Data Thread. **/
+        Thread_t DATA_THREAD;
 		
 		/** Returns the index of a component of the CONNECTIONS vector that has been flagged Disconnected **/
 		int FindSlot()
@@ -160,7 +163,7 @@ namespace LLP
 		}
 		
 		DataThread<ProtocolType>(unsigned int id, bool isDDOS, unsigned int rScore, unsigned int cScore, unsigned int nTimeout) : 
-			ID(id), fDDOS(isDDOS), DDOS_rSCORE(rScore), DDOS_cSCORE(cScore), TIMEOUT(nTimeout), REQUESTS(0), CONNECTIONS(0), nConnections(0), DATA_THREAD(boost::bind(&DataThread::Thread, this)){ }
+            fDDOS(isDDOS), ID(id), DDOS_rSCORE(rScore), DDOS_cSCORE(cScore), TIMEOUT(nTimeout), DATA_THREAD(boost::bind(&DataThread::Thread, this)) { }
 	};
 
 	
@@ -182,7 +185,7 @@ namespace LLP
 		
 		
 		Server<ProtocolType>(int nPort, int nMaxThreads, bool isDDOS, int cScore, int rScore, int nTimeout) : 
-			fDDOS(isDDOS), LISTENER(SERVICE), PORT(nPort), MAX_THREADS(nMaxThreads), LISTEN_THREAD(boost::bind(&Server::ListeningThread, this)) //,METER_THREAD(boost::bind(&Server::MeterThread, this)), 
+            fDDOS(isDDOS), PORT(nPort), MAX_THREADS(nMaxThreads), LISTENER(SERVICE), LISTEN_THREAD(boost::bind(&Server::ListeningThread, this))
 		{
 			for(int index = 0; index < MAX_THREADS; index++)
 				DATA_THREADS.push_back(new DataThread<ProtocolType>(index, fDDOS, rScore, cScore, nTimeout));
@@ -194,9 +197,7 @@ namespace LLP
 		Service_t   SERVICE;
 		Listener_t  LISTENER;
 		Error_t     ERROR_HANDLE;
-		Thread_t    LISTEN_THREAD;
-		Thread_t    METER_THREAD;
-		
+        Thread_t    LISTEN_THREAD;
 	
 		/** Determine the thread with the least amount of active connections. 
 			This keeps the load balanced across all server threads. **/
