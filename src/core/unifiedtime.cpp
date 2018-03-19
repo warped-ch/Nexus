@@ -286,7 +286,7 @@ void ThreadUnifiedSamples(void* parg)
                 UNIFIED_AVERAGE_OFFSET = UNIFIED_MAJORITY.Majority();
 				
 				if(GetArg("-verbose", 0) >= 1)
-					printf("***** %i Total Samples | %i Offset (%u) | %i Majority (%u) | %"PRId64"\n", MAP_TIME_DATA.size(), nSamples.Majority(), TOTAL_SAMPLES[nSamples.Majority()], UNIFIED_AVERAGE_OFFSET, TOTAL_SAMPLES[UNIFIED_AVERAGE_OFFSET], GetUnifiedTimestamp());
+                    printf("***** %i Total Samples | %i Offset (%u) | %i Majority (%u) | %" PRId64 "\n", MAP_TIME_DATA.size(), nSamples.Majority(), TOTAL_SAMPLES[nSamples.Majority()], UNIFIED_AVERAGE_OFFSET, TOTAL_SAMPLES[UNIFIED_AVERAGE_OFFSET], GetUnifiedTimestamp());
 			}
             
             Sleep(30000);

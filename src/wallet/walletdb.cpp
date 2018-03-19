@@ -204,7 +204,7 @@ namespace Wallet
 
                     //// debug print
                     //printf("LoadWallet  %s\n", wtx.GetHash().ToString().c_str());
-                    //printf(" %12"PRI64d"  %s  %s  %s\n",
+                    //printf(" %12" PRI64d "  %s  %s  %s\n",
                     //    wtx.vout[0].nValue,
                     //    DateTimeStrFormat(wtx.GetBlockTime()).c_str(),
                     //    wtx.hashBlock.ToString().substr(0,20).c_str(),
@@ -403,7 +403,7 @@ namespace Wallet
                             dbenv.lsn_reset(strFile.c_str(), 0);
 
                             mapFileUseCount.erase(mi++);
-                            printf("Flushed wallet.dat %"PRI64d"ms\n", GetTimeMillis() - nStart);
+                            printf("Flushed wallet.dat %" PRI64d "ms\n", GetTimeMillis() - nStart);
                         }
                     }
                 }

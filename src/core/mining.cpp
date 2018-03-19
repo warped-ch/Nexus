@@ -467,7 +467,7 @@ namespace LLP
 				this->WritePacket(RESPONSE);
 				
 				if(GetArg("-verbose", 0) >= 2)
-					printf("%%%%%%%%%% Mining LLP: Sent Coinbase Reward of %"PRIu64"\n", nCoinbaseReward);
+                    printf("%%%%%%%%%% Mining LLP: Sent Coinbase Reward of %" PRIu64 "\n", nCoinbaseReward);
 				
 				return true;
 			}
@@ -859,7 +859,7 @@ namespace Core
 					dPriority += (double) nValueIn * nConf;
 
 					if(GetArg("-verbose", 0) >= 3)
-						printf("priority     nValueIn=%-12"PRI64d" nConf=%-5d dPriority=%-20.1f\n", nValueIn, nConf, dPriority);
+                        printf("priority     nValueIn=%-12" PRI64d " nConf=%-5d dPriority=%-20.1f\n", nValueIn, nConf, dPriority);
 				}
 
 				// Priority is sum(valuein * age) / txsize

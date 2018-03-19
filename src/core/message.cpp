@@ -649,7 +649,7 @@ namespace Core
 		{
 			string strMessageStart((const char *)pchMessageStart, sizeof(pchMessageStart));
 			vector<unsigned char> vchMessageStart(strMessageStart.begin(), strMessageStart.end());
-			printf("ProcessMessages : AdjustedTime=%"PRI64d" MessageStart=%s\n", GetUnifiedTimestamp(), HexStr(vchMessageStart).c_str());
+            printf("ProcessMessages : AdjustedTime=%" PRI64d " MessageStart=%s\n", GetUnifiedTimestamp(), HexStr(vchMessageStart).c_str());
 			nTimeLastPrintMessageStart = GetUnifiedTimestamp();
 		}
 
