@@ -1014,7 +1014,6 @@ namespace Core
 	{
 		uint1024 hash = pblock->GetHash();
 		uint1024 hashTarget = CBigNum().SetCompact(pblock->nBits).getuint1024();
-		unsigned int nBits;
 		
 		if(pblock->GetChannel() > 0 && !pblock->VerifyWork())
 			return error("Nexus Miner : proof of work not meeting target.");
@@ -1024,8 +1023,8 @@ namespace Core
 			printf("  hash: %s  \n", hash.ToString().substr(0, 30).c_str());
 		}
 		
-		if(pblock->GetChannel() == 1)
-			printf("  prime cluster verified of size %f\n", GetDifficulty(nBits, 1));
+        if(pblock->GetChannel() == 1)
+            printf("  prime cluster verified of size %f\n", GetDifficulty(pblock->nBits, 1));
 		else
 			printf("  target: %s\n", hashTarget.ToString().substr(0, 30).c_str());
 			
