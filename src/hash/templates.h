@@ -46,8 +46,6 @@ inline uint64 SK64(const T1 pbegin, const T1 pend)
 /** Hashing template for Address Generation **/
 inline uint64 SK64(const std::vector<unsigned char>& vch)
 {
-	static unsigned char pblank[1];
-	
     uint64 skein;
 	Skein_256_Ctxt_t ctx;
 	Skein_256_Init(&ctx, 64);
@@ -66,8 +64,6 @@ inline uint64 SK64(const std::vector<unsigned char>& vch)
 /** Hashing template for Address Generation **/
 inline uint256 SK256(const std::vector<unsigned char>& vch)
 {
-	static unsigned char pblank[1];
-	
     uint256 skein;
 	Skein_256_Ctxt_t ctx;
 	Skein_256_Init(&ctx, 256);

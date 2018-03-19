@@ -268,11 +268,7 @@ namespace Net
 		 * It is the total hashes per second required to find a hash of difficulty 1.0 every second.
 		 * This can then be used in calculing the network hash rate by block times over average of 1440 blocks.
 		 * */
-		uint64 nTimeConstant = 276758250000;
-		
-		/* Used for determining the average block times. 
-		 * TODO START: Make this its own RPC command */
-		uint64 nTotalTime = 0;
+        uint64 nTimeConstant = 276758250000;
 		
 		const Core::CBlockIndex* pindex = Core::GetLastChannelIndex(Core::pindexBest, 2);
 		unsigned int nAverageTime = 0, nTotal = 0;
@@ -318,11 +314,7 @@ namespace Net
 		 * This constant was found that 2,450 Prime Per Second is required to find 1 3ch Cluster per Second.
 		 * The difficulty changes are exponential or in other words require 50x more work per difficulty increase
 		 */
-		unsigned int nTimeConstant = 2480;
-		
-		/* Used for determining the average block times. 
-		 * TODO START: Make this its own RPC command */
-		uint64 nTotalTime = 0;
+        unsigned int nTimeConstant = 2480;
 		
 		const Core::CBlockIndex* pindex = Core::GetLastChannelIndex(Core::pindexBest, 1);
 		unsigned int nAverageTime = 0, nTotal = 0;

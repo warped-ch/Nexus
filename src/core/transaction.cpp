@@ -798,8 +798,7 @@ namespace Core
 		// ... both are false when called from CTransaction::AcceptToMemoryPool
 		if (!IsCoinBase())
 		{
-			int64 nValueIn = 0;
-			int64 nFees = 0;
+            int64 nValueIn = 0;
 			for (unsigned int i = (int) IsCoinStake(); i < vin.size(); i++)
 			{
 				COutPoint prevout = vin[i].prevout;
