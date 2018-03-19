@@ -4,7 +4,6 @@ VERSION = 0.1.0.0
 INCLUDEPATH += src src/core src/hash src/json src/keys src/net src/qt src/util src/wallet src/LLD src/LLP
 DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE
 CONFIG += no_include_pwd
-CONFIG += warn_off
 
 #Manually Link to Windoze Library Locations
 windows:BOOST_LIB_SUFFIX=-mgw49-mt-s-1_57
