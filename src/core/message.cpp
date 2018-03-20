@@ -388,7 +388,7 @@ namespace Core
 						LOCK(Net::cs_mapRelay);
 						map<Net::CInv, CDataStream>::iterator mi = Net::mapRelay.find(inv);
 						if (mi != Net::mapRelay.end())
-							pfrom->PushMessage(inv.GetCommand(), (*mi).second);
+                            pfrom->PushMessage(inv.GetCommand().c_str(), (*mi).second);
 					}
 				}
 

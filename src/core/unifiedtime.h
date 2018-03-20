@@ -9,6 +9,7 @@
 #define NEXUS_UNIFIED_TIME_H
 
 #include <vector>
+#include <string>
 #include <time.h>
 
 #include "../net/net.h"
@@ -65,7 +66,7 @@ int GetUnifiedAverage();
     Checks current time against itself, if there is too much drift, your local offset adjusts to Unified Average. **/
 void ThreadUnifiedSamples(void* parg);
 
-std::vector<Net::CAddress> DNS_Lookup(const char* DNS_Seed[]);
+std::vector<Net::CAddress> DNS_Lookup(const std::vector<std::string>& DNS_Seed);
 
 
 #endif

@@ -9,6 +9,8 @@
 #include "unifiedtime.h"
 #include "../LLP/client.h"
 #include <inttypes.h>
+#include <string>
+#include <vector>
 
 
 using namespace std;
@@ -31,7 +33,7 @@ vector<Net::CAddress> SEED_NODES;
 std::map<std::string, int> MAP_TIME_DATA;
 
 /** Declarations for the DNS Seed Nodes. **/
-const char* DNS_SeedNodes[] = 
+static const std::vector<std::string> DNS_SeedNodes =
 {
 	"node1.nexusearth.com",
 	"node1.mercuryminer.com",
@@ -106,16 +108,14 @@ const char* DNS_SeedNodes[] =
 	"node18.mercuryminer.com",
 	"node19.mercuryminer.com",
 	"node20.mercuryminer.com",
-	"node21.mercuryminer.com",
-	"\0"
+    "node21.mercuryminer.com"
 };
 
 /** Declarations for the DNS Seed Nodes. **/
-const char* DNS_SeedNodes_Testnet[] =
+static const std::vector<std::string> DNS_SeedNodes_Testnet =
 {
 	"node1.nexusearth.com",
-	"node4.nexusearth.com",
-	"\0"
+    "node4.nexusearth.com"
 };
 
 /** Seed Nodes for Unified Time. **/
@@ -151,7 +151,7 @@ void ThreadUnifiedSamples(void* parg)
 	SetThreadPriority(THREAD_PRIORITY_ABOVE_NORMAL);
 	
 	/* Compile the Seed Nodes into a set of Vectors. */
-	SEED_NODES    = DNS_Lookup(fTestNet ? DNS_SeedNodes_Testnet : DNS_SeedNodes);
+    SEED_NODES = DNS_Lookup(fTestNet ? DNS_SeedNodes_Testnet : DNS_SeedNodes);
 	
 	/* Iterator to be used to ensure every time seed is giving an equal weight towards the Global Seeds. */
 	int nIterator = -1;
@@ -299,16 +299,16 @@ void ThreadUnifiedSamples(void* parg)
 }
 
 /* DNS Query of Domain Names Associated with Seed Nodes */
-vector<Net::CAddress> DNS_Lookup(const char* DNS_Seed[])
+vector<Net::CAddress> DNS_Lookup(const std::vector<std::string>& DNS_Seed)
 {
 	vector<Net::CAddress> vNodes;
-	int scount = 0;
-	for (int seed = 0; DNS_Seed[seed] != "\0"; seed++)
+    int scount = 0;
+    for (std::size_t seed = 0; seed < DNS_Seed.size(); ++seed)
 	{
-		printf("%u Host: %s\n", seed, DNS_Seed[seed]);
+        printf("%zu Host: %s\n", seed, DNS_Seed[seed]);
 		scount++;
         vector<Net::CNetAddr> vaddr;
-        if (Net::LookupHost(DNS_Seed[seed], vaddr))
+        if (Net::LookupHost(DNS_Seed[seed].c_str(), vaddr))
         {
             BOOST_FOREACH(Net::CNetAddr& ip, vaddr)
             {
@@ -325,7 +325,7 @@ vector<Net::CAddress> DNS_Lookup(const char* DNS_Seed[])
 				Net::addrman.Add(addr, ip, true);
             }
         }
-	printf("DNS Seed Count: %d\n",scount);
+        printf("DNS Seed Count: %d\n",scount);
     }
 	
 	return vNodes;
