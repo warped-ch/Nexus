@@ -338,16 +338,12 @@ namespace Wallet
 
     bool CTimeDB::ReadTimeData(int& nOffset)
     {
-        if(!Read(0, nOffset))
-            return false;
-            
-        return true;
+        return Read(0, nOffset);
     }
     
     bool CTimeDB::WriteTimeData(int nOffset)
     {
-        if(!Write(0, nOffset))
-            return false;
+        return Write(0, nOffset);
     }
     
 
