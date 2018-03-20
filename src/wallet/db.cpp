@@ -504,26 +504,6 @@ namespace Wallet
     {
         return Write(string("strCheckpointPubKey"), strPubKey);
     }
-    
-    Core::CBlockIndex static * InsertBlockIndex(uint1024 hash)
-    {
-        if (hash == 0)
-            return NULL;
-
-        // Return existing
-        map<uint1024, Core::CBlockIndex*>::iterator mi = Core::mapBlockIndex.find(hash);
-        if (mi != Core::mapBlockIndex.end())
-            return (*mi).second;
-
-        // Create new
-        Core::CBlockIndex* pindexNew = new Core::CBlockIndex();
-        if (!pindexNew)
-            throw runtime_error("LoadBlockIndex() : new Core::CBlockIndex failed");
-        mi = Core::mapBlockIndex.insert(make_pair(hash, pindexNew)).first;
-        pindexNew->phashBlock = &((*mi).first);
-
-        return pindexNew;
-    }
 
     //
     // CAddrDB
