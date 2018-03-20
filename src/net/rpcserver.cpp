@@ -448,7 +448,7 @@ namespace Net
 			Object obj;
 
 			obj.push_back(Pair("addr", stats.addrName));
-			obj.push_back(Pair("services", strprintf("%08"PRI64x, stats.nServices)));
+            obj.push_back(Pair("services", strprintf("%08" PRI64x, stats.nServices)));
 			obj.push_back(Pair("lastsend", (boost::int64_t)stats.nLastSend));
 			obj.push_back(Pair("lastrecv", (boost::int64_t)stats.nLastRecv));
 			obj.push_back(Pair("conntime", (boost::int64_t)stats.nTimeConnected));
