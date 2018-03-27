@@ -18,13 +18,15 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 
+#include <memory>
+
 using namespace std;
 using namespace boost;
 
 namespace Core
 {
 
-	uint1024 GetOrphanRoot(const CBlock* pblock)
+    uint1024 GetOrphanRoot(std::shared_ptr<CBlock>& pblock)
 	{
 		// Work back to the first block in the orphan chain
 		while (mapOrphanBlocks.count(pblock->hashPrevBlock))
@@ -32,7 +34,7 @@ namespace Core
 		return pblock->GetHash();
 	}
 
-	uint1024 WantedByOrphan(const CBlock* pblockOrphan)
+    uint1024 WantedByOrphan(std::shared_ptr<CBlock>& pblockOrphan)
 	{
 		// Work back to the first block in the orphan chain
 		while (mapOrphanBlocks.count(pblockOrphan->hashPrevBlock))
@@ -880,9 +882,9 @@ namespace Core
 			if(GetArg("-verbose", 0) >= 0)
 				printf("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.ToString().substr(0,20).c_str());
 			
-			CBlock* pblock2 = new CBlock(*pblock);
-			mapOrphanBlocks.insert(make_pair(hash, pblock2));
-			mapOrphanBlocksByPrev.insert(make_pair(pblock2->hashPrevBlock, pblock2));
+			std::shared_ptr<CBlock> orphanBlock(std::make_shared<CBlock>(*pblock));
+			mapOrphanBlocks.insert(make_pair(hash, orphanBlock));
+			mapOrphanBlocksByPrev.insert(make_pair(orphanBlock->hashPrevBlock, orphanBlock));
 			
 			/** Simple Catch until I finish Checkpoint Syncing. **/
             if(pfrom)
@@ -902,16 +904,13 @@ namespace Core
 		for (unsigned int i = 0; i < vWorkQueue.size(); i++)
 		{
 			uint1024 hashPrev = vWorkQueue[i];
-			for (multimap<uint1024, CBlock*>::iterator mi = mapOrphanBlocksByPrev.lower_bound(hashPrev);
-				 mi != mapOrphanBlocksByPrev.upper_bound(hashPrev);
-				 ++mi)
+			for (auto mi = mapOrphanBlocksByPrev.lower_bound(hashPrev); mi != mapOrphanBlocksByPrev.upper_bound(hashPrev); ++mi)
 			{
-				CBlock* pblockOrphan = (*mi).second;
-				if (pblockOrphan->AcceptBlock())
-					vWorkQueue.push_back(pblockOrphan->GetHash());
-					
-				mapOrphanBlocks.erase(pblockOrphan->GetHash());
-				delete pblockOrphan;
+                std::shared_ptr<CBlock> orphanBlock((*mi).second);
+				if (orphanBlock->AcceptBlock()) {
+					vWorkQueue.push_back(orphanBlock->GetHash());
+                }
+				mapOrphanBlocks.erase(orphanBlock->GetHash());
 			}
 			mapOrphanBlocksByPrev.erase(hashPrev);
 		}

@@ -25,6 +25,7 @@ static const int fHaveUPnP = false;
 #endif
 
 #include <list>
+#include <memory>
 #include <inttypes.h>
 
 class CDataStream;
@@ -139,7 +140,7 @@ namespace Core
 	extern uint64 nBestChainTrust;
 	
 	/** Standard Library Global Externals **/
-	extern std::map<uint1024, CBlock*> mapOrphanBlocks;
+	extern std::map<uint1024, std::shared_ptr<CBlock>> mapOrphanBlocks;
 	
 	/** Map to keep track of the addresses and their corresponding Transactions. **/
 	extern std::map<uint256, uint64> mapAddressTransactions;
@@ -151,7 +152,7 @@ namespace Core
 	extern std::map<uint512, CDataStream*> mapOrphanTransactions;
 	extern std::map<uint512, std::map<uint512, CDataStream*> > mapOrphanTransactionsByPrev;
 	extern std::set<Wallet::CWallet*> setpwalletRegistered;
-	extern std::multimap<uint1024, CBlock*> mapOrphanBlocksByPrev;
+	extern std::multimap<uint1024, std::shared_ptr<CBlock>> mapOrphanBlocksByPrev;
 	extern std::string strMintMessage;
 	extern std::string strMintWarning;
 	
@@ -199,8 +200,8 @@ namespace Core
 	/**************************************** CORE FUNCTION REFERENCES ****************************************/
 	
 	/**  BLOCK.CPP **/
-	uint1024 GetOrphanRoot(const CBlock* pblock);
-	uint1024 WantedByOrphan(const CBlock* pblockOrphan);
+	uint1024 GetOrphanRoot(std::shared_ptr<CBlock>& pblock);
+	uint1024 WantedByOrphan(std::shared_ptr<CBlock>& pblockOrphan);
 	int64 GetProofOfWorkReward(unsigned int nBits);
 	int64 GetProofOfStakeReward(int64 nCoinAge);
 	const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfStake);
