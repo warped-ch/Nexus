@@ -1,6 +1,8 @@
 #ifndef NEXUS_LLP_SERVER_H
 #define NEXUS_LLP_SERVER_H
 
+#include <memory>
+
 #include "types.h"
 
 namespace LLP
@@ -23,41 +25,23 @@ namespace LLP
 		bool fDDOS;
 		
 		unsigned int ID, DDOS_rSCORE, DDOS_cSCORE, TIMEOUT;
-		unsigned int nConnections = 0;
 		unsigned int REQUESTS = 0;
 		/** Vector to store Connections. **/
-		std::vector< ProtocolType* > CONNECTIONS;
+		std::vector<std::unique_ptr<ProtocolType>> CONNECTIONS;
 
 		/** Data Thread. **/
 		Thread_t DATA_THREAD;
-		
-		/** Returns the index of a component of the CONNECTIONS vector that has been flagged Disconnected **/
-		int FindSlot()
-		{
-			int nSize = CONNECTIONS.size();
-			for(int index = 0; index < nSize; index++)
-				if(!CONNECTIONS[index])
-					return index;
-						
-			return nSize;
-		}
 
 		/** Adds a new connection to current Data Thread **/
 		void AddConnection(Socket_t SOCKET, DDOS_Filter* DDOS)
 		{
-			int nSlot = FindSlot();
-			if(nSlot == CONNECTIONS.size())
-				CONNECTIONS.push_back(NULL);
-				
 			if(fDDOS)
-				DDOS -> cSCORE += 1;
+				DDOS->cSCORE += 1;
 			
-			CONNECTIONS[nSlot] = new ProtocolType(SOCKET, DDOS, fDDOS);
+			CONNECTIONS.emplace_back(new ProtocolType(SOCKET, DDOS, fDDOS));
 			
-			CONNECTIONS[nSlot]->Event(EVENT_CONNECT);
-			CONNECTIONS[nSlot]->CONNECTED = true;
-			
-			++nConnections;
+			CONNECTIONS.back()->Event(EVENT_CONNECT);
+			CONNECTIONS.back()->CONNECTED = true;
 		}
 		
 		/** Removes given connection from current Data Thread. 
@@ -67,10 +51,7 @@ namespace LLP
 			CONNECTIONS[index]->Event(EVENT_DISCONNECT);
 			CONNECTIONS[index]->Disconnect();
 			
-			delete CONNECTIONS[index];
-					
-			CONNECTIONS[index] = NULL;
-			-- nConnections;
+			CONNECTIONS.erase(CONNECTIONS.begin() + index);
 		}
 		
 		/** Thread that handles all the Reading / Writing of Data from Sockets. 
@@ -83,32 +64,26 @@ namespace LLP
 				Sleep(5);
 				
 				/** Check all connections for data and packets. **/
-				int nSize = CONNECTIONS.size();
-				for(int nIndex = 0; nIndex < nSize; nIndex++)
+				for(std::size_t nIndex = 0; nIndex < CONNECTIONS.size(); nIndex++)
 				{
 					Sleep(5);
 					
 					try
 					{
-						
 						/** Skip over Inactive Connections. **/
 						if(!CONNECTIONS[nIndex])
 							continue;
-		
 							
 						/** Remove Connection if it has Timed out or had any Errors. **/
 						if(CONNECTIONS[nIndex]->Timeout(TIMEOUT) || CONNECTIONS[nIndex]->Errors())
 						{
 							RemoveConnection(nIndex);
-							
 							continue;
 						}
-						
 						
 						/** Skip over Connection if not Connected. **/
 						if(!CONNECTIONS[nIndex]->Connected())
 							continue;
-						
 						
 						/** Handle any DDOS Filters. **/
 						boost::system::error_code ec;
@@ -123,11 +98,9 @@ namespace LLP
 							if(CONNECTIONS[nIndex]->DDOS->Banned())
 							{
 								RemoveConnection(nIndex);
-								
 								continue;
 							}
 						}
-						
 						
 						/** Generic event for Connection. **/
 						CONNECTIONS[nIndex]->Event(EVENT_GENERIC);
@@ -138,21 +111,18 @@ namespace LLP
 						/** If a Packet was received successfully, increment request count [and DDOS count if enabled]. **/
 						if(CONNECTIONS[nIndex]->PacketComplete())
 						{
-							
 							/** Packet Process return value of False will flag Data Thread to Disconnect. **/
-							if(!CONNECTIONS[nIndex] -> ProcessPacket())
+							if(!CONNECTIONS[nIndex]->ProcessPacket())
 							{
 								RemoveConnection(nIndex);
-								
 								continue;
 							}
 							
-							CONNECTIONS[nIndex] -> ResetPacket();
+							CONNECTIONS[nIndex]->ResetPacket();
 							REQUESTS++;
 							
 							if(fDDOS)
 								CONNECTIONS[nIndex]->DDOS->rSCORE += 1;
-							
 						}
 					}
 					catch(std::exception& e)
@@ -205,13 +175,13 @@ namespace LLP
 			This keeps the load balanced across all server threads. **/
 		int FindThread()
 		{
-			int nIndex = 0, nConnections = DATA_THREADS[0]->nConnections;
+			int nIndex = 0, nConnections = DATA_THREADS[0]->CONNECTIONS.size();
 			for(int index = 1; index < MAX_THREADS; index++)
 			{
-				if(DATA_THREADS[index]->nConnections < nConnections)
+				if(DATA_THREADS[index]->CONNECTIONS.size() < nConnections)
 				{
 					nIndex = index;
-					nConnections = DATA_THREADS[index]->nConnections;
+					nConnections = DATA_THREADS[index]->CONNECTIONS.size();
 				}
 			}
 			
