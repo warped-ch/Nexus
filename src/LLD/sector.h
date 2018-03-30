@@ -3,6 +3,7 @@
 
 #include "keychain.h"
 #include "transaction.h"
+#include <memory>
 
 /** Lower Level Database Name Space. **/
 namespace LLD
@@ -66,7 +67,7 @@ namespace LLD
 		bool fReadOnly = false;
 		
 		/** Class to handle Transaction Data. **/
-		SectorTransaction* pTransaction;
+		std::unique_ptr<SectorTransaction> pTransaction;
 	public:
 		/** The Database Constructor. To determine file location and the Bytes per Record. **/
 		SectorDatabase(std::string strName, std::string strKeychain, const char* pszMode="r+")
@@ -80,11 +81,6 @@ namespace LLD
 			
 			Initialize();
 		}
-		~SectorDatabase()
-        { 
-            if (pTransaction) 
-                delete pTransaction;
-        }
 		
 		/** Initialize Sector Database. **/
 		void Initialize()
@@ -101,7 +97,7 @@ namespace LLD
 				cStream.close();
 			}
 			
-			pTransaction = NULL;
+			pTransaction.reset(nullptr);
 		}
 		
 		template<typename Key>
@@ -131,9 +127,9 @@ namespace LLD
 			ssKey << key;
 			std::vector<unsigned char> vKey(ssKey.begin(), ssKey.end());
 			
-			if(pTransaction){
+			if(pTransaction)
+			{
 				pTransaction->EraseTransaction(vKey);
-				
 				return true;
 			}
 		
@@ -193,10 +189,7 @@ namespace LLD
 			/** Commit to the Database. **/
 			if(pTransaction)
 			{
-				
 				std::vector<unsigned char> vOriginalData;
-				//Get(vKey, vOriginalData);
-				
 				return pTransaction->AddTransaction(vKey, vData, vOriginalData);
 			}
 			
@@ -354,12 +347,8 @@ namespace LLD
 			If any of the database updates fail in procewss it will roll the database back to its previous state. **/
 		void TxnBegin()
 		{
-			/** Delete a previous database transaction pointer if applicable. **/
-			if(pTransaction)
-				delete pTransaction;
-			
 			/** Create the new Database Transaction Object. **/
-			pTransaction = new SectorTransaction();
+			pTransaction.reset(new SectorTransaction());
 			
 			if(GetArg("-verbose", 0) >= 4)
 				printf("TransactionStart() : New Sector Transaction Started.\n");
@@ -368,12 +357,8 @@ namespace LLD
 		/** Abort the current transaction that is pending in the transaction chain. **/
 		void TxnAbort()
 		{
-			/** Delete the previous transaction pointer if applicable. **/
-			if(pTransaction)
-				delete pTransaction;
-			
 			/** Set the transaction pointer to null also acting like a flag **/
-			pTransaction = NULL;
+			pTransaction.reset(nullptr);
 		}
 		
 		/** Return the database state back to its original state before transactions are commited. **/
@@ -540,8 +525,7 @@ namespace LLD
 			
 			/** Clean up the Sector Transaction Key. 
 				TODO: Delete the Sector and Keychain for Current Transaction Commit ID. **/
-			delete pTransaction;
-			pTransaction = NULL;
+			pTransaction.reset(nullptr);
 			
 			return true;
 		}
