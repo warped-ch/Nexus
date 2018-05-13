@@ -15,6 +15,7 @@
 #endif
 
 #include "crypter.h"
+#include "../util/managed_openssl.h"
 
 namespace Wallet
 {
@@ -74,17 +75,16 @@ namespace Wallet
         int nCLen = nLen + AES_BLOCK_SIZE, nFLen = 0;
         vchCiphertext = std::vector<unsigned char> (nCLen);
 
-        EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+        EVP_CIPHER_CTX_ptr ctx(EVP_CIPHER_CTX_new(), EVP_CIPHER_CTX_free);
         if (nullptr == ctx)
             return false;
 
         bool fOk = true;
 
-        EVP_CIPHER_CTX_init(ctx);
-        if (fOk) fOk = EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, chKey, chIV);
-        if (fOk) fOk = EVP_EncryptUpdate(ctx, &vchCiphertext[0], &nCLen, &vchPlaintext[0], nLen);
-        if (fOk) fOk = EVP_EncryptFinal_ex(ctx, (&vchCiphertext[0])+nCLen, &nFLen);
-        EVP_CIPHER_CTX_free(ctx);
+        EVP_CIPHER_CTX_init(ctx.get());
+        if (fOk) fOk = EVP_EncryptInit_ex(ctx.get(), EVP_aes_256_cbc(), NULL, chKey, chIV);
+        if (fOk) fOk = EVP_EncryptUpdate(ctx.get(), &vchCiphertext[0], &nCLen, &vchPlaintext[0], nLen);
+        if (fOk) fOk = EVP_EncryptFinal_ex(ctx.get(), (&vchCiphertext[0])+nCLen, &nFLen);
 
         if (!fOk) return false;
 
@@ -103,17 +103,16 @@ namespace Wallet
 
         vchPlaintext = CKeyingMaterial(nPLen);
 
-        EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+        EVP_CIPHER_CTX_ptr ctx(EVP_CIPHER_CTX_new(), EVP_CIPHER_CTX_free);
         if (nullptr == ctx)
             return false;
 
         bool fOk = true;
 
-        EVP_CIPHER_CTX_init(ctx);
-        if (fOk) fOk = EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, chKey, chIV);
-        if (fOk) fOk = EVP_DecryptUpdate(ctx, &vchPlaintext[0], &nPLen, &vchCiphertext[0], nLen);
-        if (fOk) fOk = EVP_DecryptFinal_ex(ctx, (&vchPlaintext[0])+nPLen, &nFLen);
-        EVP_CIPHER_CTX_free(ctx);
+        EVP_CIPHER_CTX_init(ctx.get());
+        if (fOk) fOk = EVP_DecryptInit_ex(ctx.get(), EVP_aes_256_cbc(), NULL, chKey, chIV);
+        if (fOk) fOk = EVP_DecryptUpdate(ctx.get(), &vchPlaintext[0], &nPLen, &vchCiphertext[0], nLen);
+        if (fOk) fOk = EVP_DecryptFinal_ex(ctx.get(), (&vchPlaintext[0])+nPLen, &nFLen);
 
         if (!fOk) return false;
 

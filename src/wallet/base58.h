@@ -9,10 +9,11 @@
 #ifndef NEXUS_BASE58_H
 #define NEXUS_BASE58_H
 
+#include "key.h"
+#include "../util/bignum.h"
+#include "../util/managed_openssl.h"
 #include <string>
 #include <vector>
-#include "../util/bignum.h"
-#include "key.h"
 
 namespace Wallet
 {
@@ -21,7 +22,7 @@ namespace Wallet
     // Encode a byte sequence as a base58-encoded string
     inline std::string EncodeBase58(const unsigned char* pbegin, const unsigned char* pend)
     {
-        CAutoBN_CTX pctx;
+        BN_CTX_ptr ctx(BN_CTX_new(), BN_CTX_free);
         CBigNum bn58 = 58;
         CBigNum bn0 = 0;
 
@@ -42,7 +43,7 @@ namespace Wallet
         CBigNum rem;
         while (bn > bn0)
         {
-            if (!BN_div(dv.getBN(), rem.getBN(), bn.getBN(), bn58.getBN(), pctx))
+            if (!BN_div(dv.getBN(), rem.getBN(), bn.getBN(), bn58.getBN(), ctx.get()))
                 throw bignum_error("EncodeBase58 : BN_div failed");
             bn = dv;
             unsigned int c = rem.getulong();
@@ -68,7 +69,7 @@ namespace Wallet
     // returns true if decoding is succesful
     inline bool DecodeBase58(const char* psz, std::vector<unsigned char>& vchRet)
     {
-        CAutoBN_CTX pctx;
+        BN_CTX_ptr ctx(BN_CTX_new(), BN_CTX_free);
         vchRet.clear();
         CBigNum bn58 = 58;
         CBigNum bn = 0;
@@ -89,7 +90,7 @@ namespace Wallet
                 break;
             }
             bnChar.setulong(p1 - pszBase58);
-            if (!BN_mul(bn.getBN(), bn.getBN(), bn58.getBN(), pctx))
+            if (!BN_mul(bn.getBN(), bn.getBN(), bn58.getBN(), ctx.get()))
                 throw bignum_error("DecodeBase58 : BN_mul failed");
             bn += bnChar;
         }

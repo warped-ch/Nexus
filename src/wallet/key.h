@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "../util/allocators.h"
+#include "../util/managed_openssl.h"
 #include "../hash/uint1024.h"
 
 #include <openssl/ec.h> // for EC_KEY definition
@@ -36,7 +37,7 @@ namespace Wallet
     class CKey
     {
     protected:
-        EC_KEY* pkey;
+        EC_KEY_ptr pkey;
         bool fSet;
         bool fCompressedPubKey;
 

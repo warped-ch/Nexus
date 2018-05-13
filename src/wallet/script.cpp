@@ -17,8 +17,9 @@ using namespace boost;
 #include "keystore.h"
 
 #include "../core/core.h"
-#include "../util/util.h"
 #include "../util/bignum.h"
+#include "../util/util.h"
+#include "../util/managed_openssl.h"
 
 namespace Wallet
 {
@@ -241,7 +242,6 @@ namespace Wallet
 
     bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, const Core::CTransaction& txTo, unsigned int nIn, int nHashType)
     {
-        CAutoBN_CTX pctx;
         CScript::const_iterator pc = script.begin();
         CScript::const_iterator pend = script.end();
         CScript::const_iterator pbegincodehash = script.begin();
@@ -256,6 +256,8 @@ namespace Wallet
 
         try
         {
+            BN_CTX_ptr ctx(BN_CTX_new(), BN_CTX_free);
+
             while (pc < pend)
             {
                 bool fExec = !count(vfExec.begin(), vfExec.end(), false);
@@ -794,17 +796,17 @@ namespace Wallet
                             break;
 
                         case OP_MUL:
-                            if (!BN_mul(bn.getBN(), bn1.getBN(), bn2.getBN(), pctx))
+                            if (!BN_mul(bn.getBN(), bn1.getBN(), bn2.getBN(), ctx.get()))
                                 return false;
                             break;
 
                         case OP_DIV:
-                            if (!BN_div(bn.getBN(), NULL, bn1.getBN(), bn2.getBN(), pctx))
+                            if (!BN_div(bn.getBN(), NULL, bn1.getBN(), bn2.getBN(), ctx.get()))
                                 return false;
                             break;
 
                         case OP_MOD:
-                            if (!BN_mod(bn.getBN(), bn1.getBN(), bn2.getBN(), pctx))
+                            if (!BN_mod(bn.getBN(), bn1.getBN(), bn2.getBN(), ctx.get()))
                                 return false;
                             break;
 

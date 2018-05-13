@@ -7,6 +7,7 @@
 *******************************************************************************************/
 
 #include "core.h"
+#include "../util/managed_openssl.h"
 
 using namespace std;
 
@@ -97,11 +98,10 @@ namespace Core
 		a = Base or 2... 2 + checks, n is the Prime Test. Used after Miller-Rabin and Divisor tests to verify primality. **/
 	CBigNum FermatTest(const CBigNum& n, const CBigNum& a)
 	{
-		CAutoBN_CTX pctx;
+		BN_CTX_ptr ctx(BN_CTX_new(), BN_CTX_free);
 		CBigNum e = n - 1;
 		CBigNum r;
-		BN_mod_exp(r.getBN(), a.getBN(), e.getBN(), n.getBN(), pctx);
-		
+		BN_mod_exp(r.getBN(), a.getBN(), e.getBN(), n.getBN(), ctx.get());
 		return r;
 	}
 
