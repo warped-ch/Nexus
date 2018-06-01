@@ -75,7 +75,7 @@ namespace Wallet
         int nCLen = nLen + AES_BLOCK_SIZE, nFLen = 0;
         vchCiphertext = std::vector<unsigned char> (nCLen);
 
-        EVP_CIPHER_CTX_ptr ctx(EVP_CIPHER_CTX_new(), EVP_CIPHER_CTX_free);
+        EVP_CIPHER_CTX_ptr ctx(EVP_CIPHER_CTX_new());
         if (nullptr == ctx)
             return false;
 
@@ -103,7 +103,7 @@ namespace Wallet
 
         vchPlaintext = CKeyingMaterial(nPLen);
 
-        EVP_CIPHER_CTX_ptr ctx(EVP_CIPHER_CTX_new(), EVP_CIPHER_CTX_free);
+        EVP_CIPHER_CTX_ptr ctx(EVP_CIPHER_CTX_new());
         if (nullptr == ctx)
             return false;
 

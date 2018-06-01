@@ -98,7 +98,7 @@ namespace Core
 		a = Base or 2... 2 + checks, n is the Prime Test. Used after Miller-Rabin and Divisor tests to verify primality. **/
 	CBigNum FermatTest(const CBigNum& n, const CBigNum& a)
 	{
-		BN_CTX_ptr ctx(BN_CTX_new(), BN_CTX_free);
+		BN_CTX_ptr ctx(BN_CTX_new());
 		CBigNum e = n - 1;
 		CBigNum r;
 		BN_mod_exp(r.getBN(), a.getBN(), e.getBN(), n.getBN(), ctx.get());

@@ -256,7 +256,7 @@ namespace Wallet
 
         try
         {
-            BN_CTX_ptr ctx(BN_CTX_new(), BN_CTX_free);
+            BN_CTX_ptr ctx(BN_CTX_new());
 
             while (pc < pend)
             {

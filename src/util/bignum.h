@@ -32,7 +32,7 @@ public:
         validate();
     }
 
-    CBigNum(const CBigNum& b) : m_BN(BN_dup(b.getBN()), BN_clear_free)
+    CBigNum(const CBigNum& b) : m_BN(BN_dup(b.getBN()))
     {
         validate();
     }
@@ -442,7 +442,7 @@ public:
         if (BN_cmp(bn.getBN(), bn0.getBN()) == 0)
             return "0";
         
-        BN_CTX_ptr ctx(BN_CTX_new(), BN_CTX_free);
+        BN_CTX_ptr ctx(BN_CTX_new());
         while (BN_cmp(bn.getBN(), bn0.getBN()) > 0)
         {
             if (!BN_div(dv.getBN(), rem.getBN(), bn.getBN(), bnBase.getBN(), ctx.get()))
@@ -502,7 +502,7 @@ public:
 
     CBigNum& operator*=(const CBigNum& b)
     {
-        BN_CTX_ptr ctx(BN_CTX_new(), BN_CTX_free);
+        BN_CTX_ptr ctx(BN_CTX_new());
         if (!BN_mul(m_BN.get(), m_BN.get(), b.getBN(), ctx.get()))
             throw bignum_error("CBigNum::operator*= : BN_mul failed");
         return *this;
@@ -585,7 +585,7 @@ public:
     friend inline const CBigNum operator%(const CBigNum& a, const CBigNum& b);
 
 private:
-    BIGNUM_ptr m_BN = BIGNUM_ptr(BN_new(), BN_clear_free);
+    BIGNUM_ptr m_BN = BIGNUM_ptr(BN_new());
 
     void validate()
     {
@@ -624,7 +624,7 @@ inline const CBigNum operator-(const CBigNum& a)
 inline const CBigNum operator*(const CBigNum& a, const CBigNum& b)
 {
     CBigNum r;
-    BN_CTX_ptr ctx(BN_CTX_new(), BN_CTX_free);
+    BN_CTX_ptr ctx(BN_CTX_new());
     if (!BN_mul(r.getBN(), a.getBN(), b.getBN(), ctx.get()))
         throw bignum_error("CBigNum::operator* : BN_mul failed");
     return r;
@@ -633,7 +633,7 @@ inline const CBigNum operator*(const CBigNum& a, const CBigNum& b)
 inline const CBigNum operator/(const CBigNum& a, const CBigNum& b)
 {
     CBigNum r;
-    BN_CTX_ptr ctx(BN_CTX_new(), BN_CTX_free);
+    BN_CTX_ptr ctx(BN_CTX_new());
     if (!BN_div(r.getBN(), NULL, a.getBN(), b.getBN(), ctx.get()))
         throw bignum_error("CBigNum::operator/ : BN_div failed");
     return r;
@@ -642,7 +642,7 @@ inline const CBigNum operator/(const CBigNum& a, const CBigNum& b)
 inline const CBigNum operator%(const CBigNum& a, const CBigNum& b)
 {
     CBigNum r;
-    BN_CTX_ptr ctx(BN_CTX_new(), BN_CTX_free);
+    BN_CTX_ptr ctx(BN_CTX_new());
     if (!BN_mod(r.getBN(), a.getBN(), b.getBN(), ctx.get()))
         throw bignum_error("CBigNum::operator% : BN_div failed");
     return r;

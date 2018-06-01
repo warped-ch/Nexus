@@ -22,7 +22,7 @@ namespace Wallet
     // Encode a byte sequence as a base58-encoded string
     inline std::string EncodeBase58(const unsigned char* pbegin, const unsigned char* pend)
     {
-        BN_CTX_ptr ctx(BN_CTX_new(), BN_CTX_free);
+        BN_CTX_ptr ctx(BN_CTX_new());
         CBigNum bn58 = 58;
         CBigNum bn0 = 0;
 
@@ -69,7 +69,7 @@ namespace Wallet
     // returns true if decoding is succesful
     inline bool DecodeBase58(const char* psz, std::vector<unsigned char>& vchRet)
     {
-        BN_CTX_ptr ctx(BN_CTX_new(), BN_CTX_free);
+        BN_CTX_ptr ctx(BN_CTX_new());
         vchRet.clear();
         CBigNum bn58 = 58;
         CBigNum bn = 0;

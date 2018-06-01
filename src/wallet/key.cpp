@@ -25,11 +25,11 @@ namespace Wallet
 
         const EC_GROUP *group = EC_KEY_get0_group(eckey.get());
 
-        EC_POINT_ptr pub_key(EC_POINT_new(group), EC_POINT_free);
+        EC_POINT_ptr pub_key(EC_POINT_new(group));
         if (nullptr == pub_key)
             return 0;
         
-        BN_CTX_ptr ctx(BN_CTX_new(), BN_CTX_free);
+        BN_CTX_ptr ctx(BN_CTX_new());
         if (nullptr == ctx)
             return 0;
 
@@ -72,7 +72,7 @@ namespace Wallet
         #endif
 
         const EC_GROUP *group = EC_KEY_get0_group(eckey.get());
-        BN_CTX_ptr ctx(BN_CTX_new(), BN_CTX_free);
+        BN_CTX_ptr ctx(BN_CTX_new());
         if (nullptr == ctx) { ret = -1; goto err; }
         BN_CTX_start(ctx.get());
         order = BN_CTX_get(ctx.get());
@@ -84,17 +84,17 @@ namespace Wallet
         field = BN_CTX_get(ctx.get());
         if (!EC_GROUP_get_curve_GFp(group, field, NULL, NULL, ctx.get())) { ret=-2; goto err; }
         if (BN_cmp(x, field) >= 0) { ret=0; goto err; }
-        EC_POINT_ptr R(EC_POINT_new(group), EC_POINT_free);
+        EC_POINT_ptr R(EC_POINT_new(group));
         if (nullptr == R) { ret = -2; goto err; }
         if (!EC_POINT_set_compressed_coordinates_GFp(group, R.get(), x, recid % 2, ctx.get())) { ret=0; goto err; }
         if (check)
         {
-            EC_POINT_ptr O(EC_POINT_new(group), EC_POINT_free);
+            EC_POINT_ptr O(EC_POINT_new(group));
             if (nullptr == O) { ret = -2; goto err; }
             if (!EC_POINT_mul(group, O.get(), NULL, R.get(), order, ctx.get())) { ret=-2; goto err; }
             if (!EC_POINT_is_at_infinity(group, O.get())) { ret = 0; goto err; }
         }
-        EC_POINT_ptr Q(EC_POINT_new(group), EC_POINT_free);
+        EC_POINT_ptr Q(EC_POINT_new(group));
         if (nullptr == Q) { ret = -2; goto err; }
         n = EC_GROUP_get_degree(group);
         e = BN_CTX_get(ctx.get());
@@ -136,12 +136,12 @@ namespace Wallet
         fSet = false;
     }
 
-    CKey::CKey() : pkey(nullptr, EC_KEY_free)
+    CKey::CKey() : pkey(nullptr)
     {
         Reset();
     }
 
-    CKey::CKey(const CKey& b) : pkey(EC_KEY_dup(b.pkey.get()), EC_KEY_free)
+    CKey::CKey(const CKey& b) : pkey(EC_KEY_dup(b.pkey.get()))
     {
         if (nullptr == pkey)
             throw key_error("CKey::CKey(const CKey&) : EC_KEY_dup failed");
@@ -197,7 +197,7 @@ namespace Wallet
             throw key_error("CKey::SetSecret() : EC_KEY_new_by_curve_name failed");
         if (vchSecret.size() != 72)
             throw key_error("CKey::SetSecret() : secret must be 32 bytes");
-        BIGNUM_ptr bn(BN_bin2bn(&vchSecret[0], 72, BN_new()), BN_clear_free);
+        BIGNUM_ptr bn(BN_bin2bn(&vchSecret[0], 72, BN_new()));
         if (nullptr == bn)
             throw key_error("CKey::SetSecret() : BN_bin2bn failed");
         if (!EC_KEY_regenerate_key(pkey, bn))
@@ -298,7 +298,7 @@ namespace Wallet
     bool CKey::SignCompact(uint256 hash, std::vector<unsigned char>& vchSig)
     {
         bool fOk = false;
-        ECDSA_SIG_ptr sig(ECDSA_do_sign((unsigned char*)&hash, sizeof(hash), pkey.get()), ECDSA_SIG_free);
+        ECDSA_SIG_ptr sig(ECDSA_do_sign((unsigned char*)&hash, sizeof(hash), pkey.get()));
         if (nullptr == sig)
             return false;
         vchSig.clear();
@@ -354,13 +354,13 @@ namespace Wallet
         int nV = vchSig[0];
         if (nV<27 || nV>=35)
             return false;
-        ECDSA_SIG_ptr sig(ECDSA_SIG_new(), ECDSA_SIG_free);
+        ECDSA_SIG_ptr sig(ECDSA_SIG_new());
         if (nullptr == sig)
             return false;
 
         #if OPENSSL_VERSION_NUMBER > 0x10100000L
-            BIGNUM_ptr sig_r(BN_bin2bn(&vchSig[1], 72, BN_new()), BN_clear_free);
-            BIGNUM_ptr sig_s(BN_bin2bn(&vchSig[73], 72, BN_new()), BN_clear_free);
+            BIGNUM_ptr sig_r(BN_bin2bn(&vchSig[1], 72, BN_new()));
+            BIGNUM_ptr sig_s(BN_bin2bn(&vchSig[73], 72, BN_new()));
             if ((nullptr == sig_r) || (nullptr == sig_s))
                 return false;
             // set r and s values, this transfers ownership to the ECDSA_SIG object
