@@ -29,6 +29,9 @@
 #include <QLocale>
 #include <QTranslator>
 #include <QLibraryInfo>
+#include <QMessageBox>
+#include <QFile>
+#include <QDir>
 
 #include <boost/interprocess/ipc/message_queue.hpp>
 
@@ -175,6 +178,59 @@ int main(int argc, char *argv[])
 
     Q_INIT_RESOURCE(nexus);
     QApplication app(argc, argv);
+
+    // Terms and Conditions
+    QDir dir;
+    QString termsPath;
+    termsPath.append(GetDefaultDataDir().string().c_str());
+    termsPath.append("/.license");
+    QFile file(termsPath);
+
+    if (!file.exists())
+    {
+        QMessageBox msgBox;
+        msgBox.setWindowTitle("Terms and Conditions");
+        msgBox.setText("Please read and accept the terms and conditions:");
+        msgBox.setInformativeText(
+        "THE NEXUS EMBASSY HAS NOT DEVELOPED OR CREATED THE SOFTWARE USED IN THIS WALLET."
+        "THE SOFTWARE WAS CREATED ON AN OPEN SOURCED BASIS BY MEMBERS OF THE COMMUNITY.  DUE TO THIS, "
+        "THE NEXUS EMBASSY DOES NOT SPECIFICALLY ENDORSE THIS WALLET AND PLEASE USE AT YOUR OWN RISK. "
+        "THE USE OF THIS WALLET, AS WELL AS ANY WALLET MAY RESULT IN THE LOSS OF YOUR TOKENS. "
+        "USE AT YOUR OWN RISK.\n\n"
+        "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING "
+        "BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND "
+        "NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, "
+        "DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, "
+        "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.");
+
+        msgBox.setStandardButtons(QMessageBox::Cancel | QMessageBox::Ok);
+        int ret = msgBox.exec();
+
+        switch (ret) {
+            case QMessageBox::Cancel:
+            {
+                //Exit
+                return 0;
+            }
+            case QMessageBox::Ok:
+            {
+                if (file.open(QIODevice::ReadWrite))
+                {
+
+                }
+		#if defined(WIN32)
+                LPCWSTR licenseFile = (const wchar_t*) termsPath.utf16();
+                int attr = GetFileAttributes(licenseFile);
+                SetFileAttributes(licenseFile, attr | FILE_ATTRIBUTE_HIDDEN);
+                #endif
+            }
+            default:
+            // should never be reached
+                break;
+        }
+    }
+    
+    
     
     QSplashScreen splash(QPixmap(":/images/splash"), 0);
     if (GetBoolArg("-splash", true) && !GetBoolArg("-min"))

@@ -147,6 +147,7 @@ namespace Core
 	
 	/** The "Block Chain" or index of the chain linking each block to its previous block. **/
 	extern std::map<uint1024, CBlockIndex*> mapBlockIndex;
+    extern std::map<uint1024, uint1024>   mapInvalidBlocks;
 	
 	extern std::map<uint1024, uint1024> mapProofOfStake;
 	extern std::map<uint512, CDataStream*> mapOrphanTransactions;
@@ -660,22 +661,33 @@ namespace Core
 		uint64 Age(unsigned int nTime) const;
 		
 		/* Time Since last Trust Block. */
-        uint64 BlockAge(CBlockIndex* pindexNew) const;
+        uint64 BlockAge(uint1024 hashThisBlock, uint1024 hashPrevBlock) const;
         
         /* Get the Back of the Vector Connected block. */
-        uint1024 Back() const
+        uint1024 Back(uint1024 hashThisBlock = 0) const
         {
+            bool fFound = false;
             for(auto prev = hashPrevBlocks.rbegin() ; prev != hashPrevBlocks.rend() ; prev ++){
+                if(hashThisBlock != 0){
+                    if((*prev).first == hashThisBlock){
+                        fFound = true;
+                        
+                        continue;
+                    }
+                    
+                    if(!fFound)
+                        continue;
+                }
                 if((*prev).second)
                     return (*prev).first;
             }
             
-            return 0;
+            return hashGenesisBlock;
         }
 		
 		/* Flag to Determine if Class is Empty and Null. */
 		bool IsNull()  const { return (hashGenesisBlock == 0 || hashGenesisTx == 0 || nGenesisTime == 0 || vchPubKey.empty()); }
-		bool Expired(CBlockIndex* pindexNew) const;
+		bool Expired(uint1024 hashThisBlock, uint1024 hashPrevBlock) const;
 		bool CheckGenesis(CBlock cBlock) const;
 		
 		std::string ToString()
@@ -685,6 +697,17 @@ namespace Core
 			
 			return strprintf("Hash = %s, Key = %s, Genesis = %s, Tx = %s, Time = %u, Age = %u", GetHash().ToString().c_str(), cKey.ToString().c_str(), hashGenesisBlock.ToString().c_str(), hashGenesisTx.ToString().c_str(), nGenesisTime, Age(GetUnifiedTimestamp()));
 		}
+		
+		uint576 GetKey()
+        {
+            if(IsNull())
+                return 0;
+            
+            uint576 cKey;
+            cKey.SetBytes(vchPubKey);
+            
+            return cKey;
+        }
 		
 		void Print()
 		{
@@ -1466,6 +1489,9 @@ namespace Core
 			}
 			return hash;
 		}
+		
+		
+        bool Reindex(CBlockIndex* pindex);
 
 
 		bool WriteToDisk(unsigned int& nFileRet, unsigned int& nBlockPosRet)

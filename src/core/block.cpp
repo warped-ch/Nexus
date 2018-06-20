@@ -72,8 +72,62 @@ namespace Core
             pindexLastBest = pindexBest;
             nLastUpdate = GetUnifiedTimestamp();
         }
-        return (GetUnifiedTimestamp() - nLastUpdate < 10 &&
-                pindexBest->GetBlockTime() < GetUnifiedTimestamp() - 24 * 60 * 60);
+        return (pindexBest->GetBlockTime() < GetUnifiedTimestamp() - 6 * 60 * 60);
+    }
+    
+    
+    bool CBlock::Reindex(CBlockIndex* pindex)
+    {
+        // Open history file to append
+        CAutoFile fileout = CAutoFile(AppendBlockFile(pindex->nFile), SER_DISK, DATABASE_VERSION);
+        if (!fileout)
+            return error("CBlock::WriteToDisk() : AppendBlockFile failed");
+
+        // Write index header
+        unsigned char pchMessageStart[4];
+        Net::GetMessageStart(pchMessageStart);
+        
+        unsigned int nSize = fileout.GetSerializeSize(*this);
+        fileout << FLATDATA(pchMessageStart) << nSize;
+
+        // Write block
+        long fileOutPos = ftell(fileout);
+        if (fileOutPos < 0)
+            return error("CBlock::WriteToDisk() : ftell failed");
+        pindex->nBlockPos = fileOutPos;
+        fileout << *this;
+
+        // Flush stdio buffers and commit to disk before returning
+        fflush(fileout);
+#ifdef WIN32
+        _commit(_fileno(fileout));
+#else
+        fsync(fileno(fileout));
+#endif
+        
+        //// issue here: it doesn't know the version
+        unsigned int nTxPos = pindex->nBlockPos + ::GetSerializeSize(CBlock(), SER_DISK, DATABASE_VERSION) - (2 * GetSizeOfCompactSize(0)) + GetSizeOfCompactSize(vtx.size());
+        
+        LLD::CIndexDB indexdb("r+");
+        for(auto tx : vtx)
+        {
+
+            CDiskTxPos posThisTx(pindex->nFile, pindex->nBlockPos, nTxPos);
+            nTxPos += ::GetSerializeSize(tx, SER_DISK, DATABASE_VERSION);
+            
+            CTxIndex txindex;
+            if (indexdb.ReadTxIndex(tx.GetHash(), txindex))
+                txindex.pos = posThisTx;
+            else
+                txindex = CTxIndex(posThisTx, tx.vout.size());
+
+            indexdb.UpdateTxIndex(tx.GetHash(), txindex);
+        }
+        
+        if (!indexdb.WriteBlockIndex(CDiskBlockIndex(pindex)))
+            return error("Connect() : WriteBlockIndex for pindex failed");
+        
+        return true;
     }
 
 
@@ -86,8 +140,9 @@ namespace Core
         }
         if (!ReadFromDisk(pindex->nFile, pindex->nBlockPos, fReadTransactions))
             return false;
+        
         if (GetHash() != pindex->GetBlockHash())
-            return error("CBlock::ReadFromDisk() : GetHash() doesn't match index");
+            return error("CBlock::ReadFromDisk() : GetHash() %s doesn't match Index %s", GetHash().ToString().c_str(), pindex->GetBlockHash().ToString().c_str());
         return true;
     }
 
@@ -251,6 +306,13 @@ namespace Core
         }
         else
         {
+            if(!IsInitialBlockDownload() && GetBoolArg("-softban", true) && IsProofOfStake() && !cTrustPool.IsValid(*this))
+            {
+                error("\x1b[31m SOFTBAN: Not Connecting %s\x1b[0m", hash.ToString().substr(0, 20).c_str());
+                
+                return true;
+            }
+            
             CBlockIndex* pfork = pindexBest;
             CBlockIndex* plonger = pindexNew;
             while (pfork != plonger)
@@ -315,9 +377,6 @@ namespace Core
                 CBlock block;
                 if (!block.ReadFromDisk(pindex))
                     return error("CBlock::SetBestChain() : ReadFromDisk for connect failed");
-                
-                if(GetArg("-verbose", 0) >= 2)
-                    block.print();
                 
                 if (!block.ConnectBlock(indexdb, pindex))
                 {
@@ -495,20 +554,15 @@ namespace Core
         pindexNew->nChannelHeight = (pindexPrev ? pindexPrev->nChannelHeight : 0) + 1;
         
         
-        /* Check the Block Signature. */
-        if (!CheckBlockSignature())
-            return DoS(100, error("CheckBlock() : bad block signature"));
-        
-        
-        /** Compute the Released Reserves. **/
+        /* Compute the Released Reserves. */
         for(int nType = 0; nType < 3; nType++)
         {
             if(pindexNew->IsProofOfWork() && pindexPrev)
             {
-                /** Calculate the Reserves from the Previous Block in Channel's reserve and new Release. **/
+                /* Calculate the Reserves from the Previous Block in Channel's reserve and new Release. */
                 int64 nReserve  = pindexPrev->nReleasedReserve[nType] + GetReleasedReserve(pindexNew, pindexNew->GetChannel(), nType);
                 
-                /** Block Version 3 Check. Disable Reserves from going below 0. **/
+                /* Block Version 3 Check. Disable Reserves from going below 0. */
                 if(pindexNew->nVersion >= 3 && pindexNew->nCoinbaseRewards[nType] >= nReserve)
                     return error("AddToBlockIndex() : Coinbase Transaction too Large. Out of Reserve Limits");
                 
@@ -522,7 +576,7 @@ namespace Core
                 
         }
                                                 
-        /** Add the Pending Checkpoint into the Blockchain. **/
+        /* Add the Pending Checkpoint into the Blockchain. */
         if(!pindexNew->pprev || HardenCheckpoint(pindexNew))
         {
             pindexNew->PendingCheckpoint = make_pair(pindexNew->nHeight, pindexNew->GetBlockHash());
@@ -538,30 +592,21 @@ namespace Core
             
             if(GetArg("-verbose", 0) >= 2)
                 printg("===== Pending Checkpoint Age = %u Hash = %s Height = %u\n", nAge, pindexNew->PendingCheckpoint.second.ToString().substr(0, 15).c_str(), pindexNew->PendingCheckpoint.first);
-        }								 
+        }
 
-        /** Add to the MapBlockIndex **/
+        /* Add to the MapBlockIndex */
         map<uint1024, CBlockIndex*>::iterator mi = mapBlockIndex.insert(make_pair(hash, pindexNew)).first;
         pindexNew->phashBlock = &((*mi).first);
 
-
-        /** Write the new Block to Disk. **/
+        /* Write the new Block to Disk. */
         LLD::CIndexDB indexdb("r+");
         indexdb.TxnBegin();
         indexdb.WriteBlockIndex(CDiskBlockIndex(pindexNew));
-        
-        bool fValid = true;
-        if(GetBoolArg("-softban", true) && IsProofOfStake() && !cTrustPool.IsValid(*this))
-            fValid = false;
 
-        /** Set the Best chain if Highest Trust. **/
-        if(fValid || IsInitialBlockDownload()) {
-            if (pindexNew->nChainTrust > nBestChainTrust)
-                if (!SetBestChain(indexdb, pindexNew))
-                    return false;
-        }
-        else
-            printf("\x1b[31m SOFTBAN: Not Connecting %s\x1b[0m \n", hash.ToString().substr(0, 20).c_str());
+        /* Set the Best chain if Highest Trust. */
+        if (pindexNew->nChainTrust > nBestChainTrust)
+            if (!SetBestChain(indexdb, pindexNew))
+                return false;
             
         /** Commit the Transaction to the Database. **/
         if(!indexdb.TxnCommit())
@@ -572,12 +617,6 @@ namespace Core
             /* Relay the Block to Nexus Network. */
             if (!IsInitialBlockDownload())
             {
-                if(!fValid)
-                {
-                    printf("\x1b[31m SOFTBAN: Not Relaying %s\x1b[0m \n", hash.ToString().substr(0, 20).c_str()); 
-                    return true;
-                }
-                
                 LOCK(Net::cs_vNodes);
                 for(auto pnode : Net::vNodes)
                     pnode->PushInventory(Net::CInv(Net::MSG_BLOCK, hash));
@@ -787,6 +826,11 @@ namespace Core
         // Check merkleroot
         if (hashMerkleRoot != BuildMerkleTree())
             return DoS(100, error("CheckBlock() : hashMerkleRoot mismatch"));
+        
+        
+        /* Check the Block Signature. */
+        if (!CheckBlockSignature())
+            return DoS(100, error("CheckBlock() : bad block signature"));
 
         return true;
     }
@@ -816,16 +860,16 @@ namespace Core
         /** Check that the nBits match the current Difficulty. **/
         if (nBits != GetNextTargetRequired(pindexPrev, GetChannel(), !IsInitialBlockDownload()))
             return DoS(100, error("AcceptBlock() : incorrect proof-of-work/proof-of-stake"));
-            
-            
-        /** Check that Block is Descendant of Hardened Checkpoints. **/
-        if(pindexPrev && !IsDescendant(pindexPrev))
-            return error("AcceptBlock() : Not a descendant of Last Checkpoint");
 
             
         /** Check That Block Timestamp is not before previous block. **/
         if (GetBlockTime() <= pindexPrev->GetBlockTime())
             return error("AcceptBlock() : block's timestamp too early Block: %" PRId64 " Prev: %" PRId64 "", GetBlockTime(), pindexPrev->GetBlockTime());
+        
+        
+        /* Check that Block is Descendant of Hardened Checkpoints. */
+        if(pindexPrev && !IsDescendant(pindexPrev))
+            return error("AcceptBlock() : Not a descendant of Last Checkpoint");
             
             
         /** Check the Coinbase Transactions in Block Version 3. **/
@@ -844,11 +888,11 @@ namespace Core
                     
             /* Check that the Exchange Reward Matches the Coinbase Calculations. */
             if (round_coin_digits(vtx[0].vout[nSize - 2].nValue, 3) != round_coin_digits(GetCoinbaseReward(pindexPrev, GetChannel(), 1), 3))
-                return error("AcceptBlock() : exchange reward mismatch %" PRId64 " : %" PRId64 "\n", round_coin_digits(vtx[0].vout[nSize - 2].nValue, 3), round_coin_digits(GetCoinbaseReward(pindexPrev, GetChannel(), 1), 3));
+                return error("AcceptBlock() : exchange reward mismatch %" PRId64 " : %" PRId64 "", round_coin_digits(vtx[0].vout[nSize - 2].nValue, 3), round_coin_digits(GetCoinbaseReward(pindexPrev, GetChannel(), 1), 3));
                         
             /* Check that the Developer Reward Matches the Coinbase Calculations. */
             if (round_coin_digits(vtx[0].vout[nSize - 1].nValue, 3) != round_coin_digits(GetCoinbaseReward(pindexPrev, GetChannel(), 2), 3))
-                return error("AcceptBlock() : developer reward mismatch %" PRId64 " : %" PRId64 "\n", round_coin_digits(vtx[0].vout[nSize - 1].nValue, 3), round_coin_digits(GetCoinbaseReward(pindexPrev, GetChannel(), 2), 3));
+                return error("AcceptBlock() : developer reward mismatch %" PRId64 " : %" PRId64 "", round_coin_digits(vtx[0].vout[nSize - 1].nValue, 3), round_coin_digits(GetCoinbaseReward(pindexPrev, GetChannel(), 2), 3));
                     
         }
         
@@ -891,7 +935,10 @@ namespace Core
         // Check for duplicate
         uint1024 hash = pblock->GetHash();
         if (mapBlockIndex.count(hash))
+        {
             return error("ProcessBlock() : already have block %d %s", mapBlockIndex[hash]->nHeight, hash.ToString().substr(0,20).c_str());
+        }
+        
         if (mapOrphanBlocks.count(hash))
             return error("ProcessBlock() : already have block (orphan) %s", hash.ToString().substr(0,20).c_str());
 
@@ -909,7 +956,6 @@ namespace Core
             mapOrphanBlocks.insert(make_pair(hash, pblock2));
             mapOrphanBlocksByPrev.insert(make_pair(pblock2->hashPrevBlock, pblock2));
             
-            /** Simple Catch until I finish Checkpoint Syncing. **/
             if(pfrom)
                 pfrom->PushGetBlocks(pindexBest, 0);
             
@@ -918,7 +964,6 @@ namespace Core
         
         if (!pblock->AcceptBlock())
             return error("ProcessBlock() : AcceptBlock FAILED");
-
 
         // Recursively process any orphan blocks that depended on this one
         vector<uint1024> vWorkQueue;
@@ -1020,10 +1065,12 @@ namespace Core
     {
         if (nFile == -1)
             return NULL;
+        
         FILE* file = fopen((GetDataDir() / strprintf("blk%04d.dat", nFile)).string().c_str(), pszMode);
         if (!file)
             return NULL;
-        if (nBlockPos != 0 && !strchr(pszMode, 'a') && !strchr(pszMode, 'w'))
+        
+        if (nBlockPos != 0 && !strchr(pszMode, 'a'))
         {
             if (fseek(file, nBlockPos, SEEK_SET) != 0)
             {
@@ -1031,6 +1078,7 @@ namespace Core
                 return NULL;
             }
         }
+        
         return file;
     }
 
