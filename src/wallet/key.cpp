@@ -266,7 +266,7 @@ namespace Wallet
     {
         unsigned int nSize = ECDSA_size(pkey.get());
         vchSig.resize(nSize); // Make sure it is big enough
-        
+
         bool fSuccess = false;
         if(nBits == 256)
         {
@@ -280,13 +280,13 @@ namespace Wallet
         }
         else
             fSuccess = (ECDSA_sign(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], &nSize, pkey.get()) == 1);
-        
+
         if(!fSuccess)
         {
             vchSig.clear();
             return false;
         }
-        
+
         vchSig.resize(nSize); // Shrink to fit actual size
         return true;
     }
@@ -399,7 +399,7 @@ namespace Wallet
         }
         else
             fSuccess = (ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey.get()) == 1);
-            
+
         return fSuccess;
     }
 
