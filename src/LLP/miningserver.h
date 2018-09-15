@@ -499,28 +499,27 @@ namespace LLP
                 
                 if(nChannel == 1) //mod to get a 1023-bit or less number
                 {
-                  unsigned int bit_mask = 0xFF000000;
+                  unsigned int bit_mask = 0xFFF00000;
                   size_t counter = 1;
 
-                  while(NEW_BLOCK.GetHash().high_bits(bit_mask))
+                  while(NEW_BLOCK.GetHash().high_bits(bit_mask) != 0)
                   {
                     NEW_BLOCK.vtx[0].vin[0].scriptSig = (Wallet::CScript() << (1024 * counter));
                     NEW_BLOCK.hashMerkleRoot = NEW_BLOCK.BuildMerkleTree();
                     NEW_BLOCK.UpdateTime();
-                    
-                    if(NEW_BLOCK.GetHash().high_bits(bit_mask) == 0)
-                      MAP_BLOCKS[NEW_BLOCK.hashMerkleRoot] = NEW_BLOCK;
 
                     ++counter;
                   }
+                  MAP_BLOCKS[NEW_BLOCK.hashMerkleRoot] = NEW_BLOCK;
+                }
+                else
+                {
+                  /* Store the new block in the memory map of recent blocks being worked on. */
+                  MAP_BLOCKS[NEW_BLOCK.hashMerkleRoot] = NEW_BLOCK;
                 }
 
                 if(GetArg("-verbose", 0) >= 3)
                     printf("%%%%%%%%%% Mining LLP: Created new Block %s\n", NEW_BLOCK.hashMerkleRoot.ToString().substr(0, 20).c_str());
-
-                /* Store the new block in the memory map of recent blocks being worked on. */
-                MAP_BLOCKS[NEW_BLOCK.hashMerkleRoot] = NEW_BLOCK;
-
 
                 /* Construct a response packet by serializing the Block. */
                 Packet RESPONSE;
